@@ -1,7 +1,7 @@
 #include "std_lib_facilities.h"
 
 // This exercise was actually incredibly helpful to demonstrate tokens and grammars
-// I am very impressed with it.
+// I was very impressed with it.
 
 
 class Token {
@@ -12,14 +12,12 @@ public:
 
 class TokenStream {               // Class declarations appear first, and only then comes the definitions
 public:
-	// TokenStream();
 	void putBack(Token t);
 	Token get();
 
 private:
 	bool full{ false };
 	Token tokenAvailable;
-
 };
 
 
@@ -45,7 +43,7 @@ Token TokenStream::get() {
 	case '{': case '}': case '!':
 		return Token{ ch };
 	
-	case '0': case '1': case '2': case '3': case '4':      // Number beggins
+	case '0': case '1': case '2': case '3': case '4':      // Number readings
 	case '5': case '6': case '7': case '8': case '9': case '.':
 		cin.putback(ch);
 		double value;
