@@ -153,8 +153,6 @@ double primary() {
 	case '8':
 		return t.value;
 
-		// Add statement that checkes if next char is '!' here and performs the factorial before returning.
-
 	default:
 		error("Bad token.");
 	}
