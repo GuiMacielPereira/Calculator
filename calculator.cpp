@@ -39,7 +39,7 @@ Token TokenStream::get() {
 	switch (ch) {
 	
 	case '+': case '-': case '*': case '/': 
-	case '=': case '(': case ')': case ';':
+	case ';': case '(': case ')': case 'q':
 	case '{': case '}': case '!':
 		return Token{ ch };
 	
@@ -168,7 +168,7 @@ try {
 	cout << "Welcome to our simple calculator."
 		<< "\nPlease enter floating point numbers."
 		<< "\nExpressions available: +, -, *, /"
-		<< "\nPress '=' to return value and ';' to quit."
+		<< "\nPress ';' to return value and 'q' to quit."
 		<< "\nHave fun!" << "\n\n";
 
 	double val = 0;
@@ -176,13 +176,21 @@ try {
 		cout << "> ";
 		Token t = ts.get();
 
-		if (t.kind == ';') break;
-		if (t.kind == '=') cout << "=" << val << '\n';
-		else ts.putBack(t);
-		
-		val = expression();    // Will be called in the next iteration
+		while (t.kind == ';'){
+			t = ts.get();
+			cout << "Character ';' found, reading next empty space ???\n";    // Leaving this here for now to debug and try to understand wtf is happening
+			cout << "kind: " << t.kind << ", value: " << t.value << "\n";
+		}
+
+		if (t.kind == 'q') {
+			keep_window_open();
+			return 0;            
+		};
+		ts.putBack(t);
+		cout << " =" << expression() << "\n";
 	}
 	keep_window_open("~~");
+	return 0;
 }
 catch (exception& e) {
 	cerr << e.what() << '\n';
