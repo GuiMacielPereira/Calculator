@@ -39,7 +39,7 @@ Token TokenStream::get() {
 	switch (ch) {
 	
 	case '+': case '-': case '*': case '/': 
-	case '=': case '(': case ')': case 'x':
+	case '=': case '(': case ')': case ';':
 	case '{': case '}': case '!':
 		return Token{ ch };
 	
@@ -52,6 +52,7 @@ Token TokenStream::get() {
 
 	default:
 		error("Token not recognized.");
+		return Token{'0', 0};    // Return some Token for completeness of function
 	}
 
 }
@@ -154,37 +155,42 @@ double primary() {
 		return t.value;
 
 	default:
-		error("Bad token.");
+		error("Primary expected.");
+		return 1;
 	}
 }
+
+// const char exit = ';';
+
 
 int main()
 try {
 	cout << "Welcome to our simple calculator."
 		<< "\nPlease enter floating point numbers."
 		<< "\nExpressions available: +, -, *, /"
-		<< "\nPress '=' to return value and 'x' to quit."
+		<< "\nPress '=' to return value and ';' to quit."
 		<< "\nHave fun!" << "\n\n";
 
 	double val = 0;
 	while (cin) {
+		cout << "> ";
 		Token t = ts.get();
 
-		if (t.kind == 'x') break;
+		if (t.kind == ';') break;
 		if (t.kind == '=') cout << "=" << val << '\n';
 		else ts.putBack(t);
 		
 		val = expression();    // Will be called in the next iteration
 	}
-	keep_window_open();
+	keep_window_open("~~");
 }
 catch (exception& e) {
 	cerr << e.what() << '\n';
-	keep_window_open();
+	keep_window_open("~~");     // Keeps window open unti user types "~~"
 	return 1;
 }
 catch (...) {
 	cerr << "exception \n";
-	keep_window_open();
+	keep_window_open("~~");
 	return 2;
 }
