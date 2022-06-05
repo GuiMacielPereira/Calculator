@@ -19,6 +19,7 @@ class TokenStream {               // Class declarations appear first, and only t
 public:
 	void putBack(Token t);
 	Token get();
+	void ignore(char c);
 
 private:
 	bool full{ false };
@@ -60,7 +61,8 @@ catch (...) {
 
 void calculate(){
 
-	while (cin) {
+	while (cin) 
+	try {
 		cout << prompt;
 		Token t = ts.get();
 
@@ -71,8 +73,18 @@ void calculate(){
 		ts.putBack(t);
 		cout << result << expression() << "\n";
 	}
+	catch (exception& e){
+		cerr << e.what() << '\n';
+		ts.ignore(print);
+	}
 }
 
+void TokenStream::ignore(char c){
+	while (true){
+		Token t = ts.get();
+		if (t.kind == print) return;
+	}
+}
 
 void TokenStream::putBack(Token t) {
 	full = true;
