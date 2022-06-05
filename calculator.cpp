@@ -3,7 +3,6 @@
 // This exercise was actually incredibly helpful to demonstrate tokens and grammars
 // I was very impressed with it.
 
-
 const char quit = 'q';
 const char print = ';';
 const char number = '8';
@@ -26,12 +25,59 @@ private:
 	Token tokenAvailable;
 };
 
+TokenStream ts;
+
+void calculate();
+double expression();     // Declarations allows tells the compiler to trust that this function is defined somewhere
+double term();
+double secondary();
+double primary();
+
+
+int main()
+try {
+	cout << "Welcome to our simple calculator."
+		<< "\nPlease enter floating point numbers."
+		<< "\nExpressions available: +, -, *, /, %, !"
+		<< "\nPress " << print << " to return value and " << quit << " to quit."
+		<< "\nHave fun!" << "\n\n";
+
+	calculate();
+	keep_window_open("~~");
+	return 0;            // Return zero to show successful completion
+}
+catch (exception& e) {
+	cerr << e.what() << '\n';
+	keep_window_open("~~");     // Keeps window open unti user types "~~"
+	return 1;
+}
+catch (...) {
+	cerr << "exception \n";
+	keep_window_open("~~");
+	return 2;
+}
+
+
+void calculate(){
+
+	while (cin) {
+		cout << prompt;
+		Token t = ts.get();
+
+		 // Eats up the ; character, so the next input read by cin starts anew
+		while (t.kind == print)	t = ts.get();    
+		if (t.kind == quit)	return;            
+
+		ts.putBack(t);
+		cout << result << expression() << "\n";
+	}
+}
+
 
 void TokenStream::putBack(Token t) {
 	full = true;
 	tokenAvailable = t;
 }
-
 
 Token TokenStream::get() {
 
@@ -67,15 +113,7 @@ Token TokenStream::get() {
 
 }
 
-
 // Write Grammar
-
-TokenStream ts;
-double expression();     // Declarations allows tells the compiler to trust that this function is defined somewhere
-double term();
-double secondary();
-double primary();
-
 
 double expression() {
 
@@ -183,42 +221,4 @@ double primary() {
 		error("Primary expected.");
 		return 1;
 	}
-}
-
-void calculate(){
-
-	while (cin) {
-		cout << prompt;
-		Token t = ts.get();
-
-		 // Eats up the ; character, so the next input read by cin starts anew
-		while (t.kind == print)	t = ts.get();    
-		if (t.kind == quit)	return;            
-
-		ts.putBack(t);
-		cout << result << expression() << "\n";
-	}
-}
-
-int main()
-try {
-	cout << "Welcome to our simple calculator."
-		<< "\nPlease enter floating point numbers."
-		<< "\nExpressions available: +, -, *, /, %, !"
-		<< "\nPress " << print << " to return value and " << quit << " to quit."
-		<< "\nHave fun!" << "\n\n";
-
-	calculate();
-	keep_window_open("~~");
-	return 0;            // Return zero to show successful completion
-}
-catch (exception& e) {
-	cerr << e.what() << '\n';
-	keep_window_open("~~");     // Keeps window open unti user types "~~"
-	return 1;
-}
-catch (...) {
-	cerr << "exception \n";
-	keep_window_open("~~");
-	return 2;
 }
