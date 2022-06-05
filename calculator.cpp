@@ -4,6 +4,12 @@
 // I was very impressed with it.
 
 
+const char quit = 'q';
+const char print = ';';
+const char number = '8';
+const char prompt = '>';
+const char result = '=';
+
 class Token {
 public:
 	char kind;
@@ -38,17 +44,21 @@ Token TokenStream::get() {
 	cin >> ch;   // Read one character
 	switch (ch) {
 	
-	case '+': case '-': case '*': case '/': 
-	case ';': case '(': case ')': case 'q':
-	case '{': case '}': case '!':
+	case print:
+	case quit:
+	case '+': case '-': 
+	case '*': case '/': case '%': 
+	case '!':
+	case '(': case ')': case '{': case '}':
 		return Token{ ch };
 	
 	case '0': case '1': case '2': case '3': case '4':      // Number readings
-	case '5': case '6': case '7': case '8': case '9': case '.':
+	case '5': case '6': case '7': case '8': case '9': 
+	case '.':
 		cin.putback(ch);
 		double value;
 		cin >> value;
-		return Token{ '8' , value};
+		return Token{ number , value};
 
 	default:
 		error("Token not recognized.");
@@ -109,6 +119,15 @@ double term() {
 			t = ts.get();
 			break;
 		}
+		case '%':
+		 {
+			// Need to check for zero
+			double d  = secondary();
+			if (d == 0) error("Cannot perform modulo by zero!");
+			buffer = fmod(buffer, d);
+			t = ts.get();
+			break;
+		 }
 		default:
 			ts.putBack(t);
 			return buffer;
@@ -151,8 +170,14 @@ double primary() {
 		if (ts.get().kind != '}') error("missing '}'");         // char ')' gets eaten here i.e. not returned to token_stream
 		return d;
 	}
-	case '8':
+	case number:
 		return t.value;
+
+	case '-':                  // Add the possibility for negative numbers
+		return -primary();
+	
+	case '+':
+		return primary();
 
 	default:
 		error("Primary expected.");
@@ -160,37 +185,32 @@ double primary() {
 	}
 }
 
-// const char exit = ';';
+void calculate(){
 
+	while (cin) {
+		cout << prompt;
+		Token t = ts.get();
+
+		 // Eats up the ; character, so the next input read by cin starts anew
+		while (t.kind == print)	t = ts.get();    
+		if (t.kind == quit)	return;            
+
+		ts.putBack(t);
+		cout << result << expression() << "\n";
+	}
+}
 
 int main()
 try {
 	cout << "Welcome to our simple calculator."
 		<< "\nPlease enter floating point numbers."
-		<< "\nExpressions available: +, -, *, /"
-		<< "\nPress ';' to return value and 'q' to quit."
+		<< "\nExpressions available: +, -, *, /, %, !"
+		<< "\nPress " << print << " to return value and " << quit << " to quit."
 		<< "\nHave fun!" << "\n\n";
 
-	double val = 0;
-	while (cin) {
-		cout << "> ";
-		Token t = ts.get();
-
-		while (t.kind == ';'){
-			t = ts.get();
-			cout << "Character ';' found, reading next empty space ???\n";    // Leaving this here for now to debug and try to understand wtf is happening
-			cout << "kind: " << t.kind << ", value: " << t.value << "\n";
-		}
-
-		if (t.kind == 'q') {
-			keep_window_open();
-			return 0;            
-		};
-		ts.putBack(t);
-		cout << " =" << expression() << "\n";
-	}
+	calculate();
 	keep_window_open("~~");
-	return 0;
+	return 0;            // Return zero to show successful completion
 }
 catch (exception& e) {
 	cerr << e.what() << '\n';
