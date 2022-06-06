@@ -66,7 +66,7 @@ void calculate(){
 		cout << prompt;
 		Token t = ts.get();
 
-		 // Eats up the ; character, so the next input read by cin starts anew
+		// Eats up the ; character, so the next input read by cin starts anew
 		while (t.kind == print)	t = ts.get();    
 		if (t.kind == quit)	return;            
 
@@ -79,12 +79,23 @@ void calculate(){
 	}
 }
 
+
 void TokenStream::ignore(char c){
-	while (true){
-		Token t = ts.get();
-		if (t.kind == print) return;
+
+	// Deal with characters in TokenStream
+	if (full){          
+		full = false;          // Refresh Token stream
+		if (tokenAvailable.kind==c) return;	
 	}
+	
+	// Deal with characters in cin stream
+	char ch;
+	while (cin >> ch){     // Flush remaining chars of cin stream until end of statement
+		if (ch == c) break;
+	}
+	return;
 }
+
 
 void TokenStream::putBack(Token t) {
 	full = true;
@@ -122,7 +133,6 @@ Token TokenStream::get() {
 		error("Token not recognized.");
 		return Token{'0', 0};    // Return some Token for completeness of function
 	}
-
 }
 
 // Write Grammar
@@ -211,13 +221,22 @@ double primary() {
 	case '(':
 	{                                  // Need curly brackets to initialize variable inside case
 		double d = expression(); 
-		if (ts.get().kind != ')') error("missing ')'");         // char ')' gets eaten here i.e. not returned to token_stream
+		Token t = ts.get();
+		if (t.kind != ')'){
+			ts.putBack(t);    		// Putting back token to cover the case for char print
+			error("missing ')'");
+		}          
+		// Notice that char ')' gets eaten
 		return d;
 	}
 	case '{':
 	{                                  // Need curly brackets to initialize variable inside case
 		double d = expression();
-		if (ts.get().kind != '}') error("missing '}'");         // char ')' gets eaten here i.e. not returned to token_stream
+		Token t = ts.get();
+		if (t.kind != '}'){
+			ts.putBack(t);    		// Putting back token to cover the case for char print
+			error("missing ')'");
+		}          
 		return d;
 	}
 	case number:
@@ -230,7 +249,7 @@ double primary() {
 		return primary();
 
 	default:
+	 	ts.putBack(t);
 		error("Primary expected.");
-		return 1;
 	}
 }
