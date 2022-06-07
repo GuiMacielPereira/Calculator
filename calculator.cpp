@@ -8,11 +8,20 @@ const char print = ';';
 const char number = '8';
 const char prompt = '>';
 const char result = '=';
+const char word = 'a';
+const char let = 'L';
+const string defString = "let";
 
 class Token {
 public:
 	char kind;
 	double value;
+	string name;     // Allow for tokens to store strings as well
+
+	// Generator options
+	Token(char ch): kind{ch} {};   // Input only a character and leave the remaining attributes unitialized
+	Token(char ch, double v): kind{ch}, value{v} {};
+	Token(char ch, string n): kind{ch}, name{n} {};
 };
 
 class TokenStream {               // Class declarations appear first, and only then comes the definitions
@@ -37,13 +46,10 @@ double primary();
 
 int main()
 try {
-	cout << "Welcome to our simple calculator."
-		<< "\nPlease enter floating point numbers."
-		<< "\nExpressions available: +, -, *, /, %, !"
-		<< "\nPress " << print << " to return value and " << quit << " to quit."
-		<< "\nHave fun!" << "\n\n";
+	printWelcome();
 
 	calculate();
+
 	keep_window_open("~~");
 	return 0;            // Return zero to show successful completion
 }
@@ -56,6 +62,15 @@ catch (...) {
 	cerr << "exception \n";
 	keep_window_open("~~");
 	return 2;
+}
+
+void printWelcome(){
+	cout << "Welcome to our simple calculator."
+		<< "\nPlease enter floating point numbers."
+		<< "\nExpressions available: +, -, *, /, %, !"
+		<< "\nPress " << print << " to return value and " << quit << " to quit."
+		<< "\nHave fun!" << "\n\n";
+	return;
 }
 
 
@@ -71,7 +86,7 @@ void calculate(){
 		if (t.kind == quit)	return;            
 
 		ts.putBack(t);
-		cout << result << expression() << "\n";
+		cout << result << expression() << "\n";     // TODO: don't forget to replace by statement()
 	}
 	catch (exception& e){
 		cerr << e.what() << '\n';
@@ -130,12 +145,55 @@ Token TokenStream::get() {
 		return Token{ number , value};
 
 	default:
+		if (isalpha(ch)){			// If letter, start reading string
+			string name;
+			name += ch;
+			while (cin.get(ch) && (isalpha(ch) || isdigit(ch))) name += ch;  // Keep reading if character is letter or digit
+			cin.putback(ch);    				 // Character is not a digit or a letter, put it back
+			if (name==defString) return Token(let);
+			return Token(word, name);
+		}
 		error("Token not recognized.");
 		return Token{'0', 0};    // Return some Token for completeness of function
 	}
 }
 
 // Write Grammar
+
+double statement() {
+	Token t = ts.get();
+	if (t.kind==let) return definition();
+	ts.putBack(t);       // If not a definition, put number back into stream
+	return expression();
+	
+}
+
+double definition(){
+
+	// let was already read 
+	// Read word
+
+	Token t = ts.get();
+	switch (t.kind){
+		case word:
+		t = ts.get();
+		if (t.kind != word) error("name of variable expected.");
+		t = ts.get();
+		if (t.kind != '=') error("'=' expected.");
+		double d = expression();
+		// Assign value read to new variable
+
+	}
+}
+
+
+// Add class variable to store name of variable and value
+// vector of variables
+// function to get variable by name from searching vector
+// function to append a new variable to vector if not existing
+
+
+
 
 double expression() {
 
