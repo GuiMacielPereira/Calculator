@@ -245,11 +245,12 @@ double primary() {
 	case '-':                  // Add the possibility for negative numbers
 		return -primary();
 	
-	case '+':
+	case '+':                 // This will mean that repeated +'s are skiped: eg. 1++++2; works
 		return primary();
 
 	default:
 	 	ts.putBack(t);
 		error("Primary expected.");
+		break;
 	}
 }
