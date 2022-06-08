@@ -35,13 +35,34 @@ private:
 	Token tokenAvailable;
 };
 
+class Variable{
+	public:
+	string name;
+	double value;
+};
+
+class AvailableVariables{
+	private:
+	vector<Variable> storedVars;
+	bool checkVarExists(string n);
+
+	public:
+	double getVar(string name);
+	void setVar(string name, double value);
+};
+
 TokenStream ts;
+AvailableVariables vars;        // Create object to store and retrive user defined variables
 
 void calculate();
+double statement();
+double definition();
 double expression();     // Declarations allows tells the compiler to trust that this function is defined somewhere
 double term();
 double secondary();
 double primary();
+
+void printWelcome();   
 
 
 int main()
@@ -86,7 +107,7 @@ void calculate(){
 		if (t.kind == quit)	return;            
 
 		ts.putBack(t);
-		cout << result << expression() << "\n";     // TODO: don't forget to replace by statement()
+		cout << result << statement() << "\n";     // TODO: don't forget to replace by statement()
 	}
 	catch (exception& e){
 		cerr << e.what() << '\n';
@@ -150,13 +171,32 @@ Token TokenStream::get() {
 			name += ch;
 			while (cin.get(ch) && (isalpha(ch) || isdigit(ch))) name += ch;  // Keep reading if character is letter or digit
 			cin.putback(ch);    				 // Character is not a digit or a letter, put it back
-			if (name==defString) return Token(let);
-			return Token(word, name);
+			if (name==defString) return Token{let};
+			return Token{word, name};
 		}
 		error("Token not recognized.");
 		return Token{'0', 0};    // Return some Token for completeness of function
 	}
 }
+
+
+// Store available variables in vector
+
+double AvailableVariables::getVar(string n){
+	for (Variable v : storedVars) if (v.name == n) return v.value;
+	error("get() call did not find variable with name="+n);
+}
+
+void AvailableVariables::setVar(string n, double v){
+	if (checkVarExists(n)) error("Overwriting variables not supported.");
+	storedVars.push_back(Variable{n, v});
+}
+
+bool AvailableVariables::checkVarExists(string n){
+	for (Variable v : storedVars) if (v.name == n) return true;
+	return false;
+}
+
 
 // Write Grammar
 
@@ -174,26 +214,20 @@ double definition(){
 	// Read word
 
 	Token t = ts.get();
-	switch (t.kind){
-		case word:
-		t = ts.get();
-		if (t.kind != word) error("name of variable expected.");
-		t = ts.get();
-		if (t.kind != '=') error("'=' expected.");
-		double d = expression();
-		// Assign value read to new variable
+	if (t.kind != word) error("variable name expected.");
+	string varName = t.name;     // Read name of variable
 
-	}
+	t = ts.get();
+	if (t.kind != '=') error("'=' expected.");
+
+	double d = expression();
+	vars.setVar(varName, d);     // Store variable 
+	return d;               // Good idea to return double, to keep consistency with other functions in grammar
 }
 
 
-// Add class variable to store name of variable and value
-// vector of variables
-// function to get variable by name from searching vector
-// function to append a new variable to vector if not existing
 
-
-
+// Second Grammar
 
 double expression() {
 
@@ -305,6 +339,9 @@ double primary() {
 	
 	case '+':                 // This will mean that repeated +'s are skiped: eg. 1++++2; works
 		return primary();
+
+	case word:
+		return vars.getVar(t.name);    // The beauty of Tokens is that string input types can just as easily be handled by the switch statement
 
 	default:
 	 	ts.putBack(t);
