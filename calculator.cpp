@@ -21,7 +21,7 @@ public:
 	// Generator options
 	Token(char ch): kind{ch} {};   // Input only a character and leave the remaining attributes unitialized
 	Token(char ch, double v): kind{ch}, value{v} {};
-	Token(char ch, string n): kind{ch}, name{n} {};
+	Token(char ch, string n): kind{ch}, name{n} {};   // Curly braces mean 'assign this value to variable'
 };
 
 class TokenStream {               // Class declarations appear first, and only then comes the definitions
@@ -32,7 +32,8 @@ public:
 
 private:
 	bool full{ false };
-	Token tokenAvailable;
+	Token tokenAvailable {word, "None"} ;    // Need to initialize Token using one of the geenrator definitions
+
 };
 
 class Variable{
@@ -43,7 +44,7 @@ class Variable{
 
 class AvailableVariables{
 	private:
-	vector<Variable> storedVars;
+	vector<Variable> storedVars{};
 	bool checkVarExists(string n);
 
 	public:
@@ -183,7 +184,7 @@ Token TokenStream::get() {
 // Store available variables in vector
 
 double AvailableVariables::getVar(string n){
-	for (Variable v : storedVars) if (v.name == n) return v.value;
+	for (Variable& v : storedVars) if (v.name == n) return v.value;     // Not sure as to the reason for &
 	error("get() call did not find variable with name="+n);
 }
 
@@ -193,7 +194,7 @@ void AvailableVariables::setVar(string n, double v){
 }
 
 bool AvailableVariables::checkVarExists(string n){
-	for (Variable v : storedVars) if (v.name == n) return true;
+	for (Variable& v : storedVars) if (v.name == n) return true;
 	return false;
 }
 
