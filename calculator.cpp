@@ -68,6 +68,9 @@ void printWelcome();
 
 int main()
 try {
+	vars.setVar("pi", 3.1415926535);
+	vars.setVar("e", 2.7182818284);
+
 	printWelcome();
 
 	calculate();
@@ -168,7 +171,7 @@ Token TokenStream::get() {
 
 	default:
 		if (isalpha(ch)){			// If letter, start reading string
-			string name;
+			string name {""};
 			name += ch;
 			while (cin.get(ch) && (isalpha(ch) || isdigit(ch))) name += ch;  // Keep reading if character is letter or digit
 			cin.putback(ch);    				 // Character is not a digit or a letter, put it back
