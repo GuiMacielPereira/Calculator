@@ -159,6 +159,7 @@ Token TokenStream::get() {
 	case '*': case '/': case '%': 
 	case '!':
 	case '(': case ')': case '{': case '}':
+	case '=':
 		return Token{ ch };
 	
 	case '0': case '1': case '2': case '3': case '4':      // Number readings
@@ -171,9 +172,15 @@ Token TokenStream::get() {
 
 	default:
 		if (isalpha(ch)){			// If letter, start reading string
-			string name {""};
+		 	cout << "\nLetter recognized.";
+			string name;
 			name += ch;
-			while (cin.get(ch) && (isalpha(ch) || isdigit(ch))) name += ch;  // Keep reading if character is letter or digit
+			while (cin.get(ch) && (isalpha(ch) || isdigit(ch))) {
+				cout << "\n" << ch;
+				name += ch;  // Keep reading if character is letter or digit
+				cout << "\n" << name;
+			}
+			cout << "\nName of variable: " << name << "\n";
 			cin.putback(ch);    				 // Character is not a digit or a letter, put it back
 			if (name==defString) return Token{let};
 			return Token{word, name};
