@@ -180,13 +180,14 @@ Token TokenStream::get() {
 				name += ch;  // Keep reading if character is letter or digit
 				cout << "\n" << name;
 			}
-			cout << "\nName of variable: " << name << "\n";
-			cin.putback(ch);    				 // Character is not a digit or a letter, put it back
+			cout << "\nName of variable: " << name;
+			cout << "\nch:\n" << ch << "\n";
+			cin.putback(ch);    				 // Character not part of variable name, put it back
 			if (name==defString) return Token{let};
 			return Token{word, name};
 		}
 		error("Token not recognized.");
-		return Token{'0', 0};    // Return some Token for completeness of function
+		return Token{word, "error"};    // Return some Token for completeness of function
 	}
 }
 
@@ -201,6 +202,7 @@ double AvailableVariables::getVar(string n){
 void AvailableVariables::setVar(string n, double v){
 	if (checkVarExists(n)) error("Overwriting variables not supported.");
 	storedVars.push_back(Variable{n, v});
+	if (!checkVarExists(n)) error("Pushback of variable into vector failed.");
 }
 
 bool AvailableVariables::checkVarExists(string n){
@@ -214,6 +216,7 @@ bool AvailableVariables::checkVarExists(string n){
 double statement() {
 	Token t = ts.get();
 	if (t.kind==let) return definition();
+	cout << "\nSkipped definition, going into expression ...";
 	ts.putBack(t);       // If not a definition, put number back into stream
 	return expression();
 	
@@ -225,7 +228,7 @@ double definition(){
 	// Read word
 
 	Token t = ts.get();
-	if (t.kind != word) error("variable name expected.");
+	if (t.kind != word) error("Variable name expected.");
 	string varName = t.name;     // Read name of variable
 
 	t = ts.get();
@@ -233,6 +236,7 @@ double definition(){
 
 	double d = expression();
 	vars.setVar(varName, d);     // Store variable 
+	cout << "\nVariable stored successufully with name " << varName;
 	return d;               // Good idea to return double, to keep consistency with other functions in grammar
 }
 
