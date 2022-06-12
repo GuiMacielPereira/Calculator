@@ -1,7 +1,7 @@
 #include "std_lib_facilities.h"
 
 // This exercise was actually incredibly helpful to demonstrate tokens and grammars
-// I was very impressed with it.
+// I did not anticipate a seemingly simple calculator to become so intricate 
 
 const char quit = 'q';
 const char print = ';';
@@ -22,6 +22,7 @@ public:
 	Token(char ch): kind{ch} {};   // Input only a character and leave the remaining attributes unitialized
 	Token(char ch, double v): kind{ch}, value{v} {};
 	Token(char ch, string n): kind{ch}, name{n} {};   // Curly braces mean 'assign this value to variable'
+	// Finish constructor with {} to signalize the end of the definition
 };
 
 class TokenStream {               // Class declarations appear first, and only then comes the definitions
@@ -55,10 +56,11 @@ class AvailableVariables{
 TokenStream ts;
 AvailableVariables vars;        // Create object to store and retrive user defined variables
 
+// Declarations allows tells the compiler to trust that this function is defined somewhere
 void calculate();
 double statement();
 double definition();
-double expression();     // Declarations allows tells the compiler to trust that this function is defined somewhere
+double expression();     
 double term();
 double secondary();
 double primary();
@@ -111,7 +113,7 @@ void calculate(){
 		if (t.kind == quit)	return;            
 
 		ts.putBack(t);
-		cout << result << statement() << "\n";     // TODO: don't forget to replace by statement()
+		cout << result << statement() << "\n";   
 	}
 	catch (exception& e){
 		cerr << e.what() << '\n';
@@ -172,16 +174,9 @@ Token TokenStream::get() {
 
 	default:
 		if (isalpha(ch)){			// If letter, start reading string
-		 	cout << "\nLetter recognized.";
 			string name;
 			name += ch;
-			while (cin.get(ch) && (isalpha(ch) || isdigit(ch))) {
-				cout << "\n" << ch;
-				name += ch;  // Keep reading if character is letter or digit
-				cout << "\n" << name;
-			}
-			cout << "\nName of variable: " << name;
-			cout << "\nch:\n" << ch << "\n";
+			while (cin.get(ch) && (isalpha(ch) || isdigit(ch))) name += ch;
 			cin.putback(ch);    				 // Character not part of variable name, put it back
 			if (name==defString) return Token{let};
 			return Token{word, name};
@@ -195,7 +190,7 @@ Token TokenStream::get() {
 // Store available variables in vector
 
 double AvailableVariables::getVar(string n){
-	for (Variable& v : storedVars) if (v.name == n) return v.value;     // Not sure as to the reason for &
+	for (Variable v : storedVars) if (v.name == n) return v.value;    
 	error("get() call did not find variable with name="+n);
 }
 
@@ -206,7 +201,7 @@ void AvailableVariables::setVar(string n, double v){
 }
 
 bool AvailableVariables::checkVarExists(string n){
-	for (Variable& v : storedVars) if (v.name == n) return true;
+	for (Variable v : storedVars) if (v.name == n) return true;
 	return false;
 }
 
@@ -216,7 +211,6 @@ bool AvailableVariables::checkVarExists(string n){
 double statement() {
 	Token t = ts.get();
 	if (t.kind==let) return definition();
-	cout << "\nSkipped definition, going into expression ...";
 	ts.putBack(t);       // If not a definition, put number back into stream
 	return expression();
 	
@@ -224,7 +218,7 @@ double statement() {
 
 double definition(){
 
-	// let was already read 
+	// 'let' was already read 
 	// Read word
 
 	Token t = ts.get();
@@ -236,7 +230,6 @@ double definition(){
 
 	double d = expression();
 	vars.setVar(varName, d);     // Store variable 
-	cout << "\nVariable stored successufully with name " << varName;
 	return d;               // Good idea to return double, to keep consistency with other functions in grammar
 }
 
