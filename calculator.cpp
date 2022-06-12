@@ -72,6 +72,7 @@ int main()
 try {
 	vars.setVar("pi", 3.1415926535);
 	vars.setVar("e", 2.7182818284);
+	vars.setVar("k", 1000);
 
 	printWelcome();
 
@@ -191,13 +192,13 @@ Token TokenStream::get() {
 
 double AvailableVariables::getVar(string n){
 	for (Variable v : storedVars) if (v.name == n) return v.value;    
-	error("get() call did not find variable with name="+n);
+	error("Variable with name "+n+" not found.");
 }
 
 void AvailableVariables::setVar(string n, double v){
 	if (checkVarExists(n)) error("Overwriting variables not supported.");
 	storedVars.push_back(Variable{n, v});
-	if (!checkVarExists(n)) error("Pushback of variable into vector failed.");
+	if (!checkVarExists(n)) error("Storing of variable "+n+" failed.");
 }
 
 bool AvailableVariables::checkVarExists(string n){
@@ -226,7 +227,7 @@ double definition(){
 	string varName = t.name;     // Read name of variable
 
 	t = ts.get();
-	if (t.kind != '=') error("'=' expected.");
+	if (t.kind != '=') error("Equal sign '=' expected after variable '"+varName+"'.");
 
 	double d = expression();
 	vars.setVar(varName, d);     // Store variable 
@@ -350,6 +351,9 @@ double primary() {
 
 	case word:
 		return vars.getVar(t.name);    // The beauty of Tokens is that string input types can just as easily be handled by the switch statement
+
+	case let:   // Added this option for inline definition, experimental
+		return definition();
 
 	default:
 	 	ts.putBack(t);
