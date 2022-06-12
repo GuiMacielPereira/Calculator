@@ -11,6 +11,8 @@ const char result = '=';
 const char word = 'a';
 const char let = 'L';
 const string defString = "let";
+const char sq = 'sqrt';
+const string sqrtString = "sqrt";
 
 class Token {
 public:
@@ -180,6 +182,7 @@ Token TokenStream::get() {
 			while (cin.get(ch) && (isalpha(ch) || isdigit(ch))) name += ch;
 			cin.putback(ch);    				 // Character not part of variable name, put it back
 			if (name==defString) return Token{let};
+			if (name==sqrtString) return Token{sq};
 			return Token{word, name};
 		}
 		error("Token not recognized.");
@@ -212,6 +215,8 @@ bool AvailableVariables::checkVarExists(string n){
 double statement() {
 	Token t = ts.get();
 	if (t.kind==let) return definition();
+	if (t.kind==sq) return sqrt(expression());
+	
 	ts.putBack(t);       // If not a definition, put number back into stream
 	return expression();
 	
