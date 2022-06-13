@@ -9,10 +9,12 @@ const char number = '8';
 const char prompt = '>';
 const char result = '=';
 const char word = 'a';
-const char let = 'L';
-const string defString = "let";
+const char let = '#';
+const string quitString = "exit";
 const char sq = 'sqrt';
 const string sqrtString = "sqrt";
+const char pwr = 'pow';
+const string powString = "pow";
 
 class Token {
 public:
@@ -113,7 +115,7 @@ void calculate(){
 
 		// Eats up the ; character, so the next input read by cin starts anew
 		while (t.kind == print)	t = ts.get();    
-		if (t.kind == quit)	return;            
+		if (t.kind == quit) return;             
 
 		ts.putBack(t);
 		cout << result << statement() << "\n";   
@@ -159,12 +161,12 @@ Token TokenStream::get() {
 	switch (ch) {
 	
 	case print:
-	case quit:
+	case let:
 	case '+': case '-': 
 	case '*': case '/': case '%': 
 	case '!':
 	case '(': case ')': case '{': case '}':
-	case '=':
+	case '=': case ',':
 		return Token{ ch };
 	
 	case '0': case '1': case '2': case '3': case '4':      // Number readings
@@ -181,8 +183,9 @@ Token TokenStream::get() {
 			name += ch;
 			while (cin.get(ch) && (isalpha(ch) || isdigit(ch))) name += ch;
 			cin.putback(ch);    				 // Character not part of variable name, put it back
-			if (name==defString) return Token{let};
+			if (name==quitString) return Token{quit};
 			if (name==sqrtString) return Token{sq};
+			if (name==powString) return Token{pwr};
 			return Token{word, name};
 		}
 		error("Token not recognized.");
@@ -214,8 +217,26 @@ bool AvailableVariables::checkVarExists(string n){
 
 double statement() {
 	Token t = ts.get();
+	
 	if (t.kind==let) return definition();
-	if (t.kind==sq) return sqrt(expression());
+
+	if (t.kind==sq) {
+		double d = expression();
+		if (d<0) error("Square root of negative number not allowed.");
+		return sqrt(d);
+	}
+	if (t.kind==pwr) {
+		t = ts.get();
+		if (t.kind != '(') error ("'(' expected for calling function pow(double n, int i).");
+		double base = expression();
+		t = ts.get();
+		if (t.kind != ',') error ("Missing ',' when calling pow(double n, int i).");
+		double exponent = expression();
+		int i = narrow_cast<int>(exponent);
+		t = ts.get();
+		if (t.kind != ')') error ("Missing ')' when calling pow(double n, int i).");
+		return pow(base, i);
+	}
 	
 	ts.putBack(t);       // If not a definition, put number back into stream
 	return expression();
