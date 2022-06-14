@@ -50,11 +50,12 @@ class Variable{
 class AvailableVariables{
 	private:
 	vector<Variable> storedVars{};
-	bool checkVarExists(string n);
 
 	public:
 	double getVar(string name);
 	void setVar(string name, double value);
+	bool checkVarExists(string n);
+	void replaceVar(string name, double value);
 };
 
 TokenStream ts;
@@ -181,7 +182,7 @@ Token TokenStream::get() {
 		if (isalpha(ch)){			// If letter, start reading string
 			string name;
 			name += ch;
-			while (cin.get(ch) && (isalpha(ch) || isdigit(ch))) name += ch;
+			while (cin.get(ch) && (isalpha(ch) || isdigit(ch) || ch=='_')) name += ch;
 			cin.putback(ch);    				 // Character not part of variable name, put it back
 			if (name==quitString) return Token{quit};
 			if (name==sqrtString) return Token{sq};
@@ -201,16 +202,24 @@ double AvailableVariables::getVar(string n){
 	error("Variable with name "+n+" not found.");
 }
 
-void AvailableVariables::setVar(string n, double v){
-	if (checkVarExists(n)) error("Overwriting variables not supported.");
+void AvailableVariables::setVar(string n, double v){    // Sets new variable if not already defined
+	if (checkVarExists(n)) error("Variable is already defined. Usage: v = 5;");
 	storedVars.push_back(Variable{n, v});
-	if (!checkVarExists(n)) error("Storing of variable "+n+" failed.");
 }
 
 bool AvailableVariables::checkVarExists(string n){
 	for (Variable v : storedVars) if (v.name == n) return true;
 	return false;
 }
+
+void AvailableVariables::replaceVar(string n, double v){     
+	if (!checkVarExists(n)) error ("Tried to assign value to nonexistent variable");
+	for (Variable var : storedVars) {
+		if (var.name == n) var.value = v;
+		break;
+	return;
+	}
+} 
 
 
 // Write Grammar
@@ -220,12 +229,17 @@ double statement() {
 	
 	if (t.kind==let) return definition();
 
-	if (t.kind==sq) {
+	// if ((t.kind==word) && vars.checkVarExists(t.name)){ // If variable already exists, allow assignment
+	// 	ts.putBack(t);   // Put token back into the stream to be read by definition call()
+	// 	return definition();
+	// } 
+
+	if (t.kind==sq) {                  // Square root function, works with or without brakets
 		double d = expression();
 		if (d<0) error("Square root of negative number not allowed.");
 		return sqrt(d);
 	}
-	if (t.kind==pwr) {
+	if (t.kind==pwr) {             // Power function, requires brackets as in pow(double base, int i)
 		t = ts.get();
 		if (t.kind != '(') error ("'(' expected for calling function pow(double n, int i).");
 		double base = expression();
@@ -376,7 +390,19 @@ double primary() {
 		return primary();
 
 	case word:
-		return vars.getVar(t.name);    // The beauty of Tokens is that string input types can just as easily be handled by the switch statement
+	{
+		string name = t.name;         // Extract name of variable before modifying Token t
+		double value = vars.getVar(name);    // In case word is detected, read double from stored variables
+
+		Token t = ts.get();
+		if (t.kind=='='){
+			double d = expression();
+			vars.replaceVar(name, d);
+			return d;
+		}
+		ts.putBack(t);
+		return value;    // The beauty of Tokens is that string input types can just as easily be handled by the switch statement
+	}
 
 	case let:   // Added this option for inline definition, experimental
 		return definition();
