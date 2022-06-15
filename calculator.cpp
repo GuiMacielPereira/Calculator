@@ -45,6 +45,7 @@ class Variable{
 	public:
 	string name;
 	double value;
+	bool isConst = false;   // Initialize non constant variables by default
 };
 
 class AvailableVariables{
@@ -53,7 +54,7 @@ class AvailableVariables{
 
 	public:
 	double getVar(string name);
-	void setVar(string name, double value);
+	void setVar(string name, double value, bool isConst);
 	bool checkVarExists(string n);
 	void replaceVar(string name, double value);
 };
@@ -75,9 +76,10 @@ void printWelcome();
 
 int main()
 try {
-	vars.setVar("pi", 3.1415926535);
-	vars.setVar("e", 2.7182818284);
-	vars.setVar("k", 1000);
+	// Set constant variables
+	vars.setVar("pi", 3.1415926535, true);
+	vars.setVar("e", 2.7182818284, true);
+	vars.setVar("k", 1000, true);
 
 	printWelcome();
 
@@ -202,9 +204,9 @@ double AvailableVariables::getVar(string n){
 	error("Variable with name "+n+" not found.");
 }
 
-void AvailableVariables::setVar(string n, double v){    // Sets new variable if not already defined
+void AvailableVariables::setVar(string n, double v, bool isConst){    // Sets new variable if not already defined
 	if (checkVarExists(n)) error("Variable is already defined. Usage: v = 5;");
-	storedVars.push_back(Variable{n, v});
+	storedVars.push_back(Variable{n, v, isConst});
 }
 
 bool AvailableVariables::checkVarExists(string n){
@@ -216,7 +218,8 @@ void AvailableVariables::replaceVar(string n, double v){
 	if (!checkVarExists(n)) error ("Tried to assign value to nonexistent variable");
 	for (Variable& var : storedVars) {     // Take care to loop by reference, to store changes
 		if (var.name == n) {
-			var.value = v;
+			if (!var.isConst) var.value = v;
+			else error("Tried to assign value to constant variable!");
 			return;
 		}
 	}
@@ -264,6 +267,12 @@ double definition(){
 	// Read word
 
 	Token t = ts.get();
+
+	bool isConst = false;
+	if (t.name == "const") {
+		isConst = true;
+		t = ts.get();  // Get word following "const"
+	}
 	if (t.kind != word) error("Variable name expected.");
 	string varName = t.name;     // Read name of variable
 
@@ -271,7 +280,7 @@ double definition(){
 	if (t.kind != '=') error("Equal sign '=' expected after variable '"+varName+"'.");
 
 	double d = expression();
-	vars.setVar(varName, d);     // Store variable 
+	vars.setVar(varName, d, isConst);     // Store variable 
 	return d;               // Good idea to return double, to keep consistency with other functions in grammar
 }
 
