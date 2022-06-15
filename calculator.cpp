@@ -208,16 +208,17 @@ void AvailableVariables::setVar(string n, double v){    // Sets new variable if 
 }
 
 bool AvailableVariables::checkVarExists(string n){
-	for (Variable v : storedVars) if (v.name == n) return true;
+	for (Variable v : storedVars) if (v.name == n) return true;  
 	return false;
 }
 
 void AvailableVariables::replaceVar(string n, double v){     
 	if (!checkVarExists(n)) error ("Tried to assign value to nonexistent variable");
-	for (Variable var : storedVars) {
-		if (var.name == n) var.value = v;
-		break;
-	return;
+	for (Variable& var : storedVars) {     // Take care to loop by reference, to store changes
+		if (var.name == n) {
+			var.value = v;
+			return;
+		}
 	}
 } 
 
