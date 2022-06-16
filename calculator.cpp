@@ -3,6 +3,7 @@
 // This exercise was actually incredibly helpful to demonstrate tokens and grammars
 // I did not anticipate a seemingly simple calculator to become so intricate 
 
+const char help = 'h';
 const char quit = 'q';
 const char print = ';';
 const char number = '8';
@@ -33,7 +34,7 @@ class TokenStream {               // Class declarations appear first, and only t
 public:
 	void putBack(Token t);
 	Token get();
-	void ignore(char c);
+	void ignore(vector<char> endingchars);
 
 private:
 	bool full{ false };
@@ -72,6 +73,7 @@ double secondary();
 double primary();
 
 void printWelcome();   
+void printHelp();
 
 
 int main()
@@ -108,6 +110,18 @@ void printWelcome(){
 	return;
 }
 
+void printHelp(){
+	cout << "You have reached the Help page."
+	 	<< "\nUnfortunately this section is under development."
+		<< "\nBut aa a general guidance for the calculator:"
+		<< "\n\nType numbers and +, -, *, /, % for usual calculations."
+		<< "\nPress ';' or enter to output result."
+		<< "\nIf you get stuck, press ';' to clean cin stream"
+		<< "\nType exit to exit."
+		<< "\nThis calculator accepts defiining veriables!"
+		<< "\nUse '# var = 1' to define variable"
+		<< "\nCan assign different value to defined variable ie 'var = 2'";
+}
 
 void calculate(){
 
@@ -119,31 +133,32 @@ void calculate(){
 		// Eats up the ; character, so the next input read by cin starts anew
 		while (t.kind == print)	t = ts.get();    
 		if (t.kind == quit) return;             
+		if (t.kind == help) {printHelp(); error("\n");} // Use error to clean stream and skip to next iteration
 
 		ts.putBack(t);
 		cout << result << statement() << "\n";   
 	}
 	catch (exception& e){
 		cerr << e.what() << '\n';
-		ts.ignore(print);
+		vector<char> endingChars = { print , '\n'};
+		ts.ignore(endingChars);
 	}
 }
 
 
-void TokenStream::ignore(char c){
+void TokenStream::ignore(vector<char> endingChars){
 
 	// Deal with characters in TokenStream
 	if (full){          
 		full = false;          // Refresh Token stream
-		if (tokenAvailable.kind==c) return;	
+		for (char c : endingChars) if (tokenAvailable.kind==c) return;	
 	}
 	
 	// Deal with characters in cin stream
 	char ch;
-	while (cin >> ch){     // Flush remaining chars of cin stream until end of statement
-		if (ch == c) break;
+	while (cin.get(ch)){     // Flush remaining chars of cin stream until end of statement
+		for (char c : endingChars) if (ch == c) return;
 	}
-	return;
 }
 
 
@@ -182,6 +197,9 @@ Token TokenStream::get() {
 
 	case '\n': 
 		return Token{ print };
+
+	case 'h': case 'H':
+		return Token{ help };
 
 	default:
 		if (isalpha(ch)){			// If letter, start reading string
