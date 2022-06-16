@@ -160,7 +160,7 @@ Token TokenStream::get() {
 	}
 
 	char ch;
-	cin >> ch;   // Read one character
+	while ((cin.get(ch)) && (ch==' '));   // Skip all whitespace characters, '/n' included
 	switch (ch) {
 	
 	case print:
@@ -179,6 +179,9 @@ Token TokenStream::get() {
 		double value;
 		cin >> value;
 		return Token{ number , value};
+
+	case '\n': 
+		return Token{ print };
 
 	default:
 		if (isalpha(ch)){			// If letter, start reading string
