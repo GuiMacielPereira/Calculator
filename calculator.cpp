@@ -18,6 +18,7 @@ Calculate:
 	Statement
 Print:
 	;
+	\n
 Quit:
 	exit
 Help:
