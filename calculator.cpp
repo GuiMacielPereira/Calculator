@@ -50,11 +50,14 @@ Primary:
 	pow( Expression, Expression )
 	sqrt Expression
 	Word
+	Word = Expression
 Number:
 	floating-point-literal
 Word:
 	string
-Input comes from cin through the Token_stream called ts.
+
+Input comes from cin through the TokenStream called ts.
+Variables are handled through the AvailableVariables vars.
 */
 
 
