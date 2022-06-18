@@ -15,7 +15,7 @@ Calculate:
 	Print
 	Quit
 	Help
-	Statement
+	Expression
 Print:
 	;
 	\n
@@ -24,12 +24,6 @@ Quit:
 Help:
 	H
 	h
-Statement:
-	Expression
-	# Definition
-Definition:
-	Word = Expression
-	const Word = Expression
 Expression:
 	Term
 	Expression + Term
@@ -48,14 +42,20 @@ Primary:
 	{ Expression }
 	– Primary
 	+ Primary
-	pow( Expression, Expression )
-	sqrt Expression
+	Let Definition 
 	Word
 	Word = Expression
+	pow( Expression, Expression )
+	sqrt Expression
 Number:
 	floating-point-literal
 Word:
 	string
+Let:
+	#
+Definition:
+	Word = Expression
+	const Word = Expression
 
 Input comes from cin through the TokenStream called ts.
 Variables are handled through the AvailableVariables vars.
@@ -70,6 +70,7 @@ const char prompt = '>';
 const char result = '=';
 const char word = 'a';
 const char let = '#';
+const char k = 'k';
 const string quitString = "exit";
 const char sq = 'sqrt';
 const string sqrtString = "sqrt";
@@ -86,11 +87,10 @@ public:
 	// Generator options
 	Token(char ch): kind{ch} {};   // Input only a character and leave the remaining attributes unitialized
 	Token(char ch, double v): kind{ch}, value{v} {};
-	Token(char ch, string n): kind{ch}, name{n} {};   // Curly braces mean 'assign this value to variable'
-	// Finish constructor with {} to signalize the end of the definition
+	Token(char ch, string n): kind{ch}, name{n} {};   
 };
 
-class TokenStream {               // Class declarations appear first, and only then comes the definitions
+class TokenStream {    // Class declarations appear first, and only then comes the definitions
 public:
 	void putBack(Token t);
 	Token get();
@@ -125,7 +125,6 @@ AvailableVariables vars;
 
 // Declarations allows tells the compiler to trust that this function is defined somewhere
 void calculate();
-double statement();
 double definition();
 double expression();     
 double term();
@@ -147,9 +146,9 @@ try {
 
 	calculate();
 
-	keep_window_open("~~");
 	return 0;            // Return zero to show successful completion
 }
+// Outer handling of errors, first layer of error handling inside calculate()
 catch (exception& e) {
 	cerr << e.what() << '\n';
 	keep_window_open("~~");     // Keeps window open unti user types "~~"
@@ -177,45 +176,13 @@ void calculate(){
 		if (t.kind == help) {printHelp(); error("\n");} // Use error to clean stream and skip to next iteration
 
 		ts.putBack(t);
-		cout << result << statement() << "\n";   
+		cout << result << expression() << "\n";   
 	}
 	catch (exception& e){
 		cerr << e.what() << '\n';
 		vector<char> endingChars = { print , '\n'};
 		ts.ignore(endingChars);
 	}
-}
-
-
-double statement() {
-	Token t = ts.get();
-	
-	if (t.kind==let) return definition();
-	
-	ts.putBack(t);    // If not a definition, put number back into stream
-	return expression();
-	
-}
-
-double definition(){
-	// 'let' was already read 
-
-	Token t = ts.get();
-
-	bool isConst = false;
-	if (t.name == "const") {
-		isConst = true;
-		t = ts.get();  // Get word following "const"
-	}
-	if (t.kind != word) error("Variable name expected.");
-	string varName = t.name;     // Read name of variable
-
-	t = ts.get();
-	if (t.kind != '=') error("Equal sign '=' expected after variable '"+varName+"'.");
-
-	double d = expression();
-	vars.setVar(varName, d, isConst);     // Store variable 
-	return d;     // return double to keep consistency with other functions
 }
 
 
@@ -283,15 +250,21 @@ double secondary() {
 	double buffer = primary();
 	Token t = ts.get();
 
-	if (t.kind == '!') {
-		int x = int(buffer);
+	switch(t.kind){
+	case '!': 
+	{
+		int x = narrow_cast<int>(buffer);
 		int fact = 1;
 		for (int i = 1; i <= x; i++) fact *= i;
 		return fact;
 	}
-	else
+	case k:
+		return buffer * 1000;
+
+	default:	
 		ts.putBack(t);
-	return buffer;
+		return buffer;
+	}
 }
 
 
@@ -327,6 +300,9 @@ double primary() {
 	case '+':                 // This will mean that repeated +'s are skiped: eg. 1++++2; works
 		return primary();
 
+	case let:
+		return definition();
+		
 	case word:
 	{
 		string name = t.name;    // Extract name of variable before modifying Token t
@@ -343,20 +319,17 @@ double primary() {
 		return value;    // The beauty of Tokens is that string input types can just as easily be handled by the switch statement
 	}
 
-	case let:   // Added this option for inline definition, experimental
-		return definition();
-
+	// Square root function, works with or without brakets
 	case sq: 
 	{  
-		 // Square root function, works with or without brakets
 		double d = expression();
 		if (d<0) error("Square root of negative number not allowed.");
 		return sqrt(d);
 	}
-
+	
+	// Power function, requires brackets as in pow(double base, int i)
 	case pwr:
 	{   
-		// Power function, requires brackets as in pow(double base, int i)
 		t = ts.get();
 		if (t.kind != '(') error ("'(' expected for calling function pow(double n, int i).");
 		double base = expression();
@@ -374,6 +347,28 @@ double primary() {
 		error("Primary expected.");
 		break;
 	}
+}
+
+
+double definition(){
+	// 'let' was already read 
+
+	Token t = ts.get();
+
+	bool isConst = false;
+	if (t.name == "const") {
+		isConst = true;
+		t = ts.get();  // Get word following "const"
+	}
+	if (t.kind != word) error("Variable name expected.");
+	string varName = t.name;     // Read name of variable
+
+	t = ts.get();
+	if (t.kind != '=') error("Equal sign '=' expected after variable '"+varName+"'.");
+
+	double d = expression();
+	vars.setVar(varName, d, isConst);     // Store variable 
+	return d;     // return double to keep consistency with other functions
 }
 
 
@@ -442,6 +437,7 @@ Token TokenStream::get() {
 	
 	case print:
 	case let:
+	case k:
 	case '+': case '-': 
 	case '*': case '/': case '%': 
 	case '!':
@@ -467,6 +463,7 @@ Token TokenStream::get() {
 		if (isalpha(ch)){			// If letter, start reading string
 			string name;
 			name += ch;
+			// Accept names that start with letter, and include numbers or underscores
 			while (cin.get(ch) && (isalpha(ch) || isdigit(ch) || ch=='_')) name += ch;
 			cin.putback(ch);    				 // Character not part of variable name, put it back
 			if (name==quitString) return Token{quit};
@@ -495,11 +492,10 @@ void printHelp(){
     cout << "You have reached the Help page."
          << "\nUnfortunately this section is under development."
         << "\nBut aa a general guidance for the calculator:"
-        << "\n\nType numbers and +, -, *, /, % for usual calculations."
+        << "\n\nType numbers and +, -, *, /, %, ! for usual calculations."
         << "\nPress ';' or enter to output result."
-        << "\nIf you get stuck, press ';' to clean cin stream"
         << "\nType exit to exit."
-        << "\nThis calculator accepts defiining veriables!"
+        << "\nThis calculator accepts defiining variables!"
         << "\nUse '# var = 1' to define variable"
         << "\nCan assign different value to defined variable ie 'var = 2'";
 }
