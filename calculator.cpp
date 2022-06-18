@@ -248,22 +248,31 @@ double term() {
 // Introduce new layer just for factorial (stronger binding than *, /, %)
 double secondary() {  
 	double buffer = primary();
-	Token t = ts.get();
 
-	switch(t.kind){
-	case '!': 
-	{
-		int x = narrow_cast<int>(buffer);
-		int fact = 1;
-		for (int i = 1; i <= x; i++) fact *= i;
-		return fact;
-	}
-	case k:
-		return buffer * 1000;
+	while (true) {
 
-	default:	
-		ts.putBack(t);
-		return buffer;
+		Token t = ts.get();
+
+		switch(t.kind){
+		case '!': 
+		{
+			int x = narrow_cast<int>(buffer);
+			int fact = 1;
+			for (int i = 1; i <= x; i++) {
+				fact *= i;
+				if (fact < 0) error("Overflow of factorial!");   // Using double means this doesn't catch alll wrong factorials
+			}
+			buffer = fact;
+			break;
+		}
+		case k:
+			buffer *= 1000;
+			break;
+
+		default:	
+			ts.putBack(t);
+			return buffer;
+		}
 	}
 }
 
@@ -302,7 +311,7 @@ double primary() {
 
 	case let:
 		return definition();
-		
+
 	case word:
 	{
 		string name = t.name;    // Extract name of variable before modifying Token t
