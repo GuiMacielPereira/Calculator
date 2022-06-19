@@ -259,7 +259,7 @@ double secondary() {
 			int x = narrow_cast<int>(buffer);
 			int fact = 1;
 			for (int i = 1; i <= x; i++) {
-				fact *= i;
+				fact *= i;      // Should see over flow over 12! but seeing it at 17!
 				if (fact < 0) error("Overflow of factorial!");   // Using double means this doesn't catch alll wrong factorials
 			}
 			buffer = fact;
