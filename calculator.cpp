@@ -1,4 +1,6 @@
 #include "std_lib_facilities.h"
+#include "Token.h"
+#include "Variable.h"
 
 // This exercise was actually incredibly helpful to demonstrate tokens and grammars
 // I did not anticipate a seemingly simple calculator to become so intricate 
@@ -62,81 +64,28 @@ Variables are handled through the AvailableVariables vars.
 */
 
 
-const char help = 'h';
-const char quit = 'q';
-const char print = ';';
-const char number = '8';
-const char prompt = '>';
-const char result = '=';
-const char word = 'a';
-const char let = '#';
-const char k = 'k';
-const string quitString = "exit";
-const char sq = 'sqrt';
-const string sqrtString = "sqrt";
-const char pwr = 'pow';
-const string powString = "pow";
-
-
-class Token {
-public:
-	char kind;
-	double value;
-	string name;     // Allow for tokens to store strings as well
-
-	// Generator options
-	Token(char ch): kind{ch} {};   // Input only a character and leave the remaining attributes unitialized
-	Token(char ch, double v): kind{ch}, value{v} {};
-	Token(char ch, string n): kind{ch}, name{n} {};   
-};
-
-class TokenStream {    // Class declarations appear first, and only then comes the definitions
-public:
-	void putBack(Token t);
-	Token get();
-	void ignore(vector<char> endingchars);
-
-private:
-	bool full{ false };
-	Token tokenAvailable {word, "None"} ;    // Need to initialize Token using one of the geenrator definitions
-};
-
-class Variable{
-	public:
-	string name;
-	double value;
-	bool isConst = false;   // Initialize non constant variables by default
-};
-
-class AvailableVariables{
-	private:
-	vector<Variable> storedVars{};
-
-	public:
-	double getVar(string name);
-	void setVar(string name, double value, bool isConst);
-	bool checkVarExists(string n);
-	void replaceVar(string name, double value);
-};
-
-// Create object to store and retrive user defined variables
-TokenStream ts;
-AvailableVariables vars;        
+// // Create object to store and retrive user defined variables
+// TokenStream ts;
+// AvailableVariables vars;        
 
 // Declarations allows tells the compiler to trust that this function is defined somewhere
-void calculate();
-double definition();
-double expression();     
-double term();
-double secondary();
-double primary();
-
+// Passing TokenStram and Available variables by reference allows to modify them at each step
+void calculate (TokenStream&, AvailableVariables&);
+double definition (TokenStream&, AvailableVariables&);
+double expression (TokenStream&, AvailableVariables&);     
+double term (TokenStream&, AvailableVariables&);
+double secondary (TokenStream&, AvailableVariables&);
+double primary (TokenStream&, AvailableVariables&);
 void printWelcome();   
 void printHelp();
 
 
 int main()
 try {
+	// Create object to store and retrive user defined variables
+	TokenStream ts;
+	AvailableVariables vars;        
+
 	// Set constant variables
 	vars.setVar("pi", 3.1415926535, true);
 	vars.setVar("e", 2.7182818284, true);
@@ -144,7 +93,7 @@ try {
 
 	printWelcome();
 
-	calculate();
+	calculate(ts, vars);
 
 	return 0;            // Return zero to show successful completion
 }
@@ -163,7 +112,7 @@ catch (...) {
 
 // Grammar
 
-void calculate(){
+void calculate(TokenStream& ts, AvailableVariables& vars){   // Passed by reference because we want functions modigying only one object
 
 	while (cin) 
 	try {
@@ -176,7 +125,7 @@ void calculate(){
 		if (t.kind == help) {printHelp(); error("\n");} // Use error to clean stream and skip to next iteration
 
 		ts.putBack(t);
-		cout << result << expression() << "\n";   
+		cout << result << expression(ts, vars) << "\n";   
 	}
 	catch (exception& e){
 		cerr << e.what() << '\n';
@@ -186,19 +135,19 @@ void calculate(){
 }
 
 
-double expression() {
+double expression(TokenStream& ts, AvailableVariables& vars) {
 
-	double buffer = term();
+	double buffer = term(ts, vars);
 	Token t = ts.get();
 
 	while (true) {
 		switch (t.kind) {
 		case '+':
-			buffer += term();
+			buffer += term(ts, vars);
 			t = ts.get();            
 			break;
 		case '-':
-			buffer -= term();
+			buffer -= term(ts, vars);
 			t = ts.get();
 			break;
 		default:
@@ -209,20 +158,20 @@ double expression() {
 }
 
 
-double term() {
+double term(TokenStream& ts, AvailableVariables& vars) {
 
-	double buffer = secondary();
+	double buffer = secondary(ts, vars);
 	Token t = ts.get();
 
 	while (true) {
 		switch (t.kind) {
 		case '*':
-			buffer *= secondary();
+			buffer *= secondary(ts, vars);
 			t = ts.get();
 			break;
 		case '/':
 		{
-			double d = secondary();
+			double d = secondary(ts, vars);
 			if (d == 0) error("Cannot divide by zero!");
 			buffer /= d;
 			t = ts.get();
@@ -231,7 +180,7 @@ double term() {
 		case '%':
 		 {
 			// Need to check for zero
-			double d  = secondary();
+			double d  = secondary(ts, vars);
 			if (d == 0) error("Cannot perform modulo by zero!");
 			buffer = fmod(buffer, d);
 			t = ts.get();
@@ -246,8 +195,8 @@ double term() {
 
 
 // Introduce new layer just for factorial (stronger binding than *, /, %)
-double secondary() {  
-	double buffer = primary();
+double secondary(TokenStream& ts, AvailableVariables& vars) {  
+	double buffer = primary(ts, vars);
 
 	while (true) {
 
@@ -277,14 +226,14 @@ double secondary() {
 }
 
 
-double primary() {
+double primary(TokenStream& ts, AvailableVariables& vars) {
 
 	Token t = ts.get();
 
 	switch (t.kind) {
 	case '(':
 	{                                  
-		double d = expression(); 
+		double d = expression(ts, vars); 
 		Token t = ts.get();
 		if (t.kind != ')'){       // Notice that char ')' gets eaten
 			error("missing ')'");
@@ -293,7 +242,7 @@ double primary() {
 	}
 	case '{':
 	{                                  
-		double d = expression();
+		double d = expression(ts, vars);
 		Token t = ts.get();
 		if (t.kind != '}'){
 			error("missing '}'");
@@ -304,13 +253,13 @@ double primary() {
 		return t.value;
 
 	case '-':                  // Add the possibility for negative numbers
-		return -primary();
+		return -primary(ts, vars);
 	
 	case '+':                 // This will mean that repeated +'s are skiped: eg. 1++++2; works
-		return primary();
+		return primary(ts, vars);
 
 	case let:
-		return definition();
+		return definition(ts, vars);
 
 	case word:
 	{
@@ -320,7 +269,7 @@ double primary() {
 		// Assignment of existing variable
 		Token t = ts.get();
 		if (t.kind=='='){
-			double d = expression();
+			double d = expression(ts, vars);
 			vars.replaceVar(name, d);
 			return d;
 		}
@@ -331,7 +280,7 @@ double primary() {
 	// Square root function, works with or without brakets
 	case sq: 
 	{  
-		double d = expression();
+		double d = expression(ts, vars);
 		if (d<0) error("Square root of negative number not allowed.");
 		return sqrt(d);
 	}
@@ -341,10 +290,10 @@ double primary() {
 	{   
 		t = ts.get();
 		if (t.kind != '(') error ("'(' expected for calling function pow(double n, int i).");
-		double base = expression();
+		double base = expression(ts, vars);
 		t = ts.get();
 		if (t.kind != ',') error ("Missing ',' when calling pow(double n, int i).");
-		double exponent = expression();
+		double exponent = expression(ts, vars);
 		int i = narrow_cast<int>(exponent);
 		t = ts.get();
 		if (t.kind != ')') error ("Missing ')' when calling pow(double n, int i).");
@@ -359,7 +308,7 @@ double primary() {
 }
 
 
-double definition(){
+double definition(TokenStream& ts, AvailableVariables& vars){
 	// 'let' was already read 
 
 	Token t = ts.get();
@@ -375,114 +324,9 @@ double definition(){
 	t = ts.get();
 	if (t.kind != '=') error("Equal sign '=' expected after variable '"+varName+"'.");
 
-	double d = expression();
+	double d = expression(ts, vars);
 	vars.setVar(varName, d, isConst);     // Store variable 
 	return d;     // return double to keep consistency with other functions
-}
-
-
-// AvailableVariables function definitions 
-
-double AvailableVariables::getVar(string n){
-	for (Variable v : storedVars) if (v.name == n) return v.value;    
-	error("Variable with name "+n+" not found.");
-}
-
-void AvailableVariables::setVar(string n, double v, bool isConst){    // Sets new variable if not already defined
-	if (checkVarExists(n)) error("Variable is already defined. Usage: v = 5;");
-	storedVars.push_back(Variable{n, v, isConst});
-}
-
-bool AvailableVariables::checkVarExists(string n){
-	for (Variable v : storedVars) if (v.name == n) return true;  
-	return false;
-}
-
-void AvailableVariables::replaceVar(string n, double v){     
-	if (!checkVarExists(n)) error ("Tried to assign value to nonexistent variable");
-	for (Variable& var : storedVars) {     // Take care to loop by reference, to store changes
-		if (var.name == n) {
-			if (!var.isConst) var.value = v;
-			else error("Tried to assign value to constant variable!");
-			return;
-		}
-	}
-} 
-
-
-// TokenStream Functions
-
-void TokenStream::ignore(vector<char> endingChars){
-
-	// Deal with characters in TokenStream
-	if (full){          
-		full = false;          // Refresh Token stream
-		for (char c : endingChars) if (tokenAvailable.kind==c) return;	
-	}
-	
-	// Deal with characters in cin stream
-	char ch;
-	while (cin.get(ch)){     // Flush remaining chars of cin stream until end of statement
-		for (char c : endingChars) if (ch == c) return;
-	}
-}
-
-
-void TokenStream::putBack(Token t) {
-	full = true;
-	tokenAvailable = t;
-}
-
-Token TokenStream::get() {
-
-	if (full) {             // If token already available, do not read from cin
-		full = false;
-		return tokenAvailable;
-	}
-
-	char ch;
-	while ((cin.get(ch)) && (ch==' '));   // Skip all whitespace characters, '/n' included
-	switch (ch) {
-	
-	case print:
-	case let:
-	case k:
-	case '+': case '-': 
-	case '*': case '/': case '%': 
-	case '!':
-	case '(': case ')': case '{': case '}':
-	case '=': case ',':
-		return Token{ ch };
-	
-	case '0': case '1': case '2': case '3': case '4':      // Number readings
-	case '5': case '6': case '7': case '8': case '9': 
-	case '.':
-		cin.putback(ch);
-		double value;
-		cin >> value;
-		return Token{ number , value};
-
-	case '\n': 
-		return Token{ print };
-
-	case 'h': case 'H':
-		return Token{ help };
-
-	default:
-		if (isalpha(ch)){			// If letter, start reading string
-			string name;
-			name += ch;
-			// Accept names that start with letter, and include numbers or underscores
-			while (cin.get(ch) && (isalpha(ch) || isdigit(ch) || ch=='_')) name += ch;
-			cin.putback(ch);    				 // Character not part of variable name, put it back
-			if (name==quitString) return Token{quit};
-			if (name==sqrtString) return Token{sq};
-			if (name==powString) return Token{pwr};
-			return Token{word, name};
-		}
-		error("Token not recognized.");
-		return Token{word, "error"};    // Return some Token for completeness of function
-	}
 }
 
 
