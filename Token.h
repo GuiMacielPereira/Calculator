@@ -34,11 +34,13 @@ public:
 	Token get();
 	void ignore(vector<char> endingchars);
 
-    TokenStream (istream& is): inputStream {is} {};   // Have not used this yet
+	// Define input stream for Tokens
+    TokenStream (istream& is): ist {is} {};   
+	TokenStream (): ist {cin} {};
 private:
 	bool full{ false };
 	Token tokenAvailable {word, "None"} ;    // Need to initialize Token using one of the geenrator definitions
-    istream& inputStream;    // Have not tried this yet
+    istream& ist;    // Have not tried this yet
 
 };
 
@@ -46,18 +48,18 @@ private:
 
 // TokenStream Functions
 
-void TokenStream::ignore(vector<char> endingChars){
+void TokenStream::ignore(vector<char> endChars){
 
 	// Deal with characters in TokenStream
 	if (full){          
 		full = false;          // Refresh Token stream
-		for (char c : endingChars) if (tokenAvailable.kind==c) return;	
+		for (char c : endChars) if (tokenAvailable.kind==c) return;	
 	}
 	
 	// Deal with characters in cin stream
 	char ch;
-	while (cin.get(ch)){     // Flush remaining chars of cin stream until end of statement
-		for (char c : endingChars) if (ch == c) return;
+	while (ist.get(ch)){     // Flush remaining chars of cin stream until end of statement
+		for (char c : endChars) if (ch == c) return;
 	}
 }
 
@@ -76,7 +78,7 @@ Token TokenStream::get() {
 	}
 
 	char ch;
-	while ((cin.get(ch)) && (ch==' '));   // Skip all whitespace characters, '/n' included
+	while ((ist.get(ch)) && (ch==' '));   // Skip all whitespace characters, '/n' included
 	switch (ch) {
 	
 	case print:
@@ -92,9 +94,9 @@ Token TokenStream::get() {
 	case '0': case '1': case '2': case '3': case '4':      // Number readings
 	case '5': case '6': case '7': case '8': case '9': 
 	case '.':
-		cin.putback(ch);
+		ist.putback(ch);
 		double value;
-		cin >> value;
+		ist >> value;
 		return Token{ number , value};
 
 	case '\n': 
@@ -108,8 +110,9 @@ Token TokenStream::get() {
 			string name;
 			name += ch;
 			// Accept names that start with letter, and include numbers or underscores
-			while (cin.get(ch) && (isalpha(ch) || isdigit(ch) || ch=='_')) name += ch;
-			cin.putback(ch);    				 // Character not part of variable name, put it back
+			while (ist.get(ch) && (isalpha(ch) || isdigit(ch) || ch=='_')) name += ch;
+			ist.putback(ch);  // Last character not part of variable name, put it back
+			
 			if (name==quitString) return Token{quit};
 			if (name==sqrtString) return Token{sq};
 			if (name==powString) return Token{pwr};

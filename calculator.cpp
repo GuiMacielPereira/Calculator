@@ -64,10 +64,6 @@ Variables are handled through the AvailableVariables vars.
 */
 
 
-// // Create object to store and retrive user defined variables
-// TokenStream ts;
-// AvailableVariables vars;        
-
 // Declarations allows tells the compiler to trust that this function is defined somewhere
 // Passing TokenStram and Available variables by reference allows to modify them at each step
 void calculate (TokenStream&, AvailableVariables&);
@@ -344,8 +340,9 @@ void printWelcome(){
 void printHelp(){
     cout << "You have reached the Help page."
          << "\nUnfortunately this section is under development."
-        << "\nBut aa a general guidance for the calculator:"
+        << "\nBut as a general guidance for the calculator:"
         << "\n\nType numbers and +, -, *, /, %, ! for usual calculations."
+		<< "\nIncludes pow() and sqrt()."
         << "\nPress ';' or enter to output result."
         << "\nType exit to exit."
         << "\nThis calculator accepts defiining variables!"
