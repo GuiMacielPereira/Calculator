@@ -6,15 +6,17 @@ const char print = ';';
 const char number = '8';
 const char prompt = '>';
 const char result = '=';
-const char word = 'a';
+const char var = 'a';
 const char let = '#';
 const char k = 'k';
 const string quitString = "exit";
-const char sq = 'sqrt';
+const char sq = 's';
 const string sqrtString = "sqrt";
-const char pwr = 'pow';
+const char pwr = 'p';
 const string powString = "pow";
-
+const char from = 'f';
+const string fromString = "from";
+const char path = '/';
 
 class Token {
 public:
@@ -33,13 +35,15 @@ public:
 	void putBack(Token t);
 	Token get();
 	void ignore(vector<char> endingchars);
+	// void setIStream (istream& is) {ist = is;}   // How to set an input stream to another?? Maybe use constructor
 
 	// Define input stream for Tokens
     TokenStream (istream& is): ist {is} {};   
 	TokenStream (): ist {cin} {};
+	TokenStream (Token t, istream& is): full {true}, tokenAvailable {t}, ist {is} {};
 private:
 	bool full{ false };
-	Token tokenAvailable {word, "None"} ;    // Need to initialize Token using one of the geenrator definitions
+	Token tokenAvailable {var, "None"} ;    // Need to initialize Token using one of the geenrator definitions
     istream& ist;    // Have not tried this yet
 
 };
@@ -109,16 +113,25 @@ Token TokenStream::get() {
 		if (isalpha(ch)){			// If letter, start reading string
 			string name;
 			name += ch;
+
 			// Accept names that start with letter, and include numbers or underscores
-			while (ist.get(ch) && (isalpha(ch) || isdigit(ch) || ch=='_')) name += ch;
+			// Allow to read paths with '/' and '.'
+			bool isPath = false;
+			while (ist.get(ch) && (isalpha(ch) || isdigit(ch) || ch=='_' || ch=='/' || ch=='.'))
+			{
+				name += ch;
+				if (ch=='/' || ch=='.') isPath = true;     // Flag to indicate that we have read a path instead of variable
+			}
 			ist.putback(ch);  // Last character not part of variable name, put it back
-			
+
 			if (name==quitString) return Token{quit};
 			if (name==sqrtString) return Token{sq};
 			if (name==powString) return Token{pwr};
-			return Token{word, name};
+			if (name==fromString) return Token{from};
+			if (isPath) return Token{path, name};
+			return Token{var, name};
 		}
-		error("Token not recognized.");
-		return Token{word, "error"};    // Return some Token for completeness of function
+		error("Token not recognized:", ch);
+		return Token{var, "error"};    // Return some Token for completeness of function
 	}
 }

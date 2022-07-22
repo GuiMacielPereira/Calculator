@@ -45,22 +45,22 @@ Primary:
 	– Primary
 	+ Primary
 	Let Definition 
-	Word
-	Word = Expression
+	var
+	var = Expression
 	pow( Expression, Expression )
 	sqrt Expression
 Number:
 	floating-point-literal
-Word:
+var:
 	string
 Let:
 	#
 Definition:
-	Word = Expression
-	const Word = Expression
+	var = Expression
+	const var = Expression
 
 Input comes from cin through the TokenStream called ts.
-Variables are handled through the AvailableVariables vars.
+Variables are handled through the AvailableVariables vt.
 */
 
 
@@ -79,17 +79,17 @@ void printHelp();
 int main()
 try {
 	// Create object to store and retrive user defined variables
-	TokenStream ts;
-	AvailableVariables vars;        
+	TokenStream ts;        // ts for token stream
+	AvailableVariables vt; // vt for variable table       
 
 	// Set constant variables
-	vars.setVar("pi", 3.1415926535, true);
-	vars.setVar("e", 2.7182818284, true);
-	vars.setVar("k", 1000, true);
+	vt.setVar("pi", 3.1415926535, true);
+	vt.setVar("e", 2.7182818284, true);
+	vt.setVar("k", 1000, true);
 
 	printWelcome();
 
-	calculate(ts, vars);
+	calculate(ts, vt);
 
 	return 0;            // Return zero to show successful completion
 }
@@ -108,7 +108,7 @@ catch (...) {
 
 // Grammar
 
-void calculate(TokenStream& ts, AvailableVariables& vars){   // Passed by reference because we want functions modigying only one object
+void calculate(TokenStream& ts, AvailableVariables& vt){   // Passed by reference because we want functions modigying only one object
 
 	while (cin) 
 	try {
@@ -121,7 +121,7 @@ void calculate(TokenStream& ts, AvailableVariables& vars){   // Passed by refere
 		if (t.kind == help) {printHelp(); error("\n");} // Use error to clean stream and skip to next iteration
 
 		ts.putBack(t);
-		cout << result << expression(ts, vars) << "\n";   
+		cout << result << expression(ts, vt) << "\n";   
 	}
 	catch (exception& e){
 		cerr << e.what() << '\n';
@@ -131,19 +131,19 @@ void calculate(TokenStream& ts, AvailableVariables& vars){   // Passed by refere
 }
 
 
-double expression(TokenStream& ts, AvailableVariables& vars) {
+double expression(TokenStream& ts, AvailableVariables& vt) {
 
-	double buffer = term(ts, vars);
+	double buffer = term(ts, vt);
 	Token t = ts.get();
 
 	while (true) {
 		switch (t.kind) {
 		case '+':
-			buffer += term(ts, vars);
+			buffer += term(ts, vt);
 			t = ts.get();            
 			break;
 		case '-':
-			buffer -= term(ts, vars);
+			buffer -= term(ts, vt);
 			t = ts.get();
 			break;
 		default:
@@ -154,20 +154,20 @@ double expression(TokenStream& ts, AvailableVariables& vars) {
 }
 
 
-double term(TokenStream& ts, AvailableVariables& vars) {
+double term(TokenStream& ts, AvailableVariables& vt) {
 
-	double buffer = secondary(ts, vars);
+	double buffer = secondary(ts, vt);
 	Token t = ts.get();
 
 	while (true) {
 		switch (t.kind) {
 		case '*':
-			buffer *= secondary(ts, vars);
+			buffer *= secondary(ts, vt);
 			t = ts.get();
 			break;
 		case '/':
 		{
-			double d = secondary(ts, vars);
+			double d = secondary(ts, vt);
 			if (d == 0) error("Cannot divide by zero!");
 			buffer /= d;
 			t = ts.get();
@@ -176,7 +176,7 @@ double term(TokenStream& ts, AvailableVariables& vars) {
 		case '%':
 		 {
 			// Need to check for zero
-			double d  = secondary(ts, vars);
+			double d  = secondary(ts, vt);
 			if (d == 0) error("Cannot perform modulo by zero!");
 			buffer = fmod(buffer, d);
 			t = ts.get();
@@ -191,8 +191,8 @@ double term(TokenStream& ts, AvailableVariables& vars) {
 
 
 // Introduce new layer just for factorial (stronger binding than *, /, %)
-double secondary(TokenStream& ts, AvailableVariables& vars) {  
-	double buffer = primary(ts, vars);
+double secondary(TokenStream& ts, AvailableVariables& vt) {  
+	double buffer = primary(ts, vt);
 
 	while (true) {
 
@@ -222,14 +222,14 @@ double secondary(TokenStream& ts, AvailableVariables& vars) {
 }
 
 
-double primary(TokenStream& ts, AvailableVariables& vars) {
+double primary(TokenStream& ts, AvailableVariables& vt) {
 
 	Token t = ts.get();
 
 	switch (t.kind) {
 	case '(':
 	{                                  
-		double d = expression(ts, vars); 
+		double d = expression(ts, vt); 
 		Token t = ts.get();
 		if (t.kind != ')'){       // Notice that char ')' gets eaten
 			error("missing ')'");
@@ -238,7 +238,7 @@ double primary(TokenStream& ts, AvailableVariables& vars) {
 	}
 	case '{':
 	{                                  
-		double d = expression(ts, vars);
+		double d = expression(ts, vt);
 		Token t = ts.get();
 		if (t.kind != '}'){
 			error("missing '}'");
@@ -249,24 +249,24 @@ double primary(TokenStream& ts, AvailableVariables& vars) {
 		return t.value;
 
 	case '-':                  // Add the possibility for negative numbers
-		return -primary(ts, vars);
+		return -primary(ts, vt);
 	
 	case '+':                 // This will mean that repeated +'s are skiped: eg. 1++++2; works
-		return primary(ts, vars);
+		return primary(ts, vt);
 
 	case let:
-		return definition(ts, vars);
+		return definition(ts, vt);
 
-	case word:
+	case var:
 	{
 		string name = t.name;    // Extract name of variable before modifying Token t
-		double value = vars.getVar(name);    // In case word is detected, read double from stored variables
+		double value = vt.getVar(name);    // In case var is detected, read double from stored variables
 
 		// Assignment of existing variable
 		Token t = ts.get();
 		if (t.kind=='='){
-			double d = expression(ts, vars);
-			vars.replaceVar(name, d);
+			double d = expression(ts, vt);
+			vt.replaceVar(name, d);
 			return d;
 		}
 		ts.putBack(t);
@@ -276,7 +276,7 @@ double primary(TokenStream& ts, AvailableVariables& vars) {
 	// Square root function, works with or without brakets
 	case sq: 
 	{  
-		double d = expression(ts, vars);
+		double d = expression(ts, vt);
 		if (d<0) error("Square root of negative number not allowed.");
 		return sqrt(d);
 	}
@@ -286,15 +286,28 @@ double primary(TokenStream& ts, AvailableVariables& vars) {
 	{   
 		t = ts.get();
 		if (t.kind != '(') error ("'(' expected for calling function pow(double n, int i).");
-		double base = expression(ts, vars);
+		double base = expression(ts, vt);
 		t = ts.get();
 		if (t.kind != ',') error ("Missing ',' when calling pow(double n, int i).");
-		double exponent = expression(ts, vars);
+		double exponent = expression(ts, vt);
 		int i = narrow_cast<int>(exponent);
 		t = ts.get();
 		if (t.kind != ')') error ("Missing ')' when calling pow(double n, int i).");
 		return pow(base, i);
 	}
+	
+	case from:
+	{
+		Token t = ts.get();
+		if (t.kind != path) error ("Unable to find path specified, make sure to include '.' and '/' in path name");
+		ifstream ifile {t.name};
+		if (!ifile) error ("Error ocurred for opening of file.");
+
+		// Change private input stream to file by initializing token stream 
+		TokenStream ts (ifile);
+		return primary (ts, vt);    // Start reading from file
+	}
+
 
 	default:
 	 	ts.putBack(t);
@@ -304,7 +317,7 @@ double primary(TokenStream& ts, AvailableVariables& vars) {
 }
 
 
-double definition(TokenStream& ts, AvailableVariables& vars){
+double definition(TokenStream& ts, AvailableVariables& vt){
 	// 'let' was already read 
 
 	Token t = ts.get();
@@ -312,16 +325,16 @@ double definition(TokenStream& ts, AvailableVariables& vars){
 	bool isConst = false;
 	if (t.name == "const") {
 		isConst = true;
-		t = ts.get();  // Get word following "const"
+		t = ts.get();  // Get var following "const"
 	}
-	if (t.kind != word) error("Variable name expected.");
+	if (t.kind != var) error("Variable name expected.");
 	string varName = t.name;     // Read name of variable
 
 	t = ts.get();
 	if (t.kind != '=') error("Equal sign '=' expected after variable '"+varName+"'.");
 
-	double d = expression(ts, vars);
-	vars.setVar(varName, d, isConst);     // Store variable 
+	double d = expression(ts, vt);
+	vt.setVar(varName, d, isConst);     // Store variable 
 	return d;     // return double to keep consistency with other functions
 }
 
