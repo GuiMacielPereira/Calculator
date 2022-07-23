@@ -67,6 +67,7 @@ Variables are handled through the AvailableVariables vt.
 // Declarations allows tells the compiler to trust that this function is defined somewhere
 // Passing TokenStram and Available variables by reference allows to modify them at each step
 void calculate (TokenStream&, AvailableVariables&);
+void inputFile (TokenStream&, AvailableVariables&);
 double definition (TokenStream&, AvailableVariables&);
 double expression (TokenStream&, AvailableVariables&);     
 double term (TokenStream&, AvailableVariables&);
@@ -110,23 +111,23 @@ catch (...) {
 
 void calculate(TokenStream& ts, AvailableVariables& vt){   // Passed by reference because we want functions modigying only one object
 
-	while (cin) 
+	while (ts.ist) 
 	try {
 		cout << prompt;
 		Token t = ts.get();
 
 		// Eats up the ; character, so the next input read by cin starts anew
-		while (t.kind == print)	t = ts.get();    
-		if (t.kind == quit) return;             
-		if (t.kind == help) {printHelp(); error("\n");} // Use error to clean stream and skip to next iteration
+		while (t.kind==print) t = ts.get();    
+		if (t.kind==quit || t.kind==eof) return;    // Take into acount end of input stream to quit as well       
+		if (t.kind==help) {printHelp(); cout<<'\n'; continue;} // Use error to clean stream and skip to next iteration
+		if (t.kind==from) {inputFile(ts, vt); cout<<'\n'; continue;}
 
 		ts.putBack(t);
 		cout << result << expression(ts, vt) << "\n";   
 	}
 	catch (exception& e){
 		cerr << e.what() << '\n';
-		vector<char> endingChars = { print , '\n'};
-		ts.ignore(endingChars);
+		ts.clean();
 	}
 }
 
@@ -296,17 +297,6 @@ double primary(TokenStream& ts, AvailableVariables& vt) {
 		return pow(base, i);
 	}
 	
-	case from:
-	{
-		Token t = ts.get();
-		if (t.kind != path) error ("Unable to find path specified, make sure to include '.' and '/' in path name");
-		ifstream ifile {t.name};
-		if (!ifile) error ("Error ocurred for opening of file.");
-
-		// Change private input stream to file by initializing token stream 
-		TokenStream ts (ifile);
-		return primary (ts, vt);    // Start reading from file
-	}
 
 
 	default:
@@ -336,6 +326,21 @@ double definition(TokenStream& ts, AvailableVariables& vt){
 	double d = expression(ts, vt);
 	vt.setVar(varName, d, isConst);     // Store variable 
 	return d;     // return double to keep consistency with other functions
+}
+
+void inputFile (TokenStream& ts, AvailableVariables& vt)
+{	// Token from was already read
+
+	Token t = ts.get();
+
+	if (t.kind != path) error ("Unable to find path specified, make sure to include '.' and '/' in path name");
+	ifstream ifile {t.name};
+	if (!ifile) error ("Error ocurred for opening of file.");
+
+	// Change private input stream to file by initializing token stream 
+	TokenStream tsf (ifile);
+	calculate (tsf, vt);    // Start reading from file
+	return;
 }
 
 

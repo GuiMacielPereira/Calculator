@@ -17,6 +17,8 @@ const string powString = "pow";
 const char from = 'f';
 const string fromString = "from";
 const char path = '/';
+const char err = 'e';
+const char eof = '.';
 
 class Token {
 public:
@@ -34,8 +36,8 @@ class TokenStream {    // Class declarations appear first, and only then comes t
 public:
 	void putBack(Token t);
 	Token get();
-	void ignore(vector<char> endingchars);
-	// void setIStream (istream& is) {ist = is;}   // How to set an input stream to another?? Maybe use constructor
+	void clean();
+    istream& ist;    // Have not tried this yet
 
 	// Define input stream for Tokens
     TokenStream (istream& is): ist {is} {};   
@@ -44,7 +46,6 @@ public:
 private:
 	bool full{ false };
 	Token tokenAvailable {var, "None"} ;    // Need to initialize Token using one of the geenrator definitions
-    istream& ist;    // Have not tried this yet
 
 };
 
@@ -52,18 +53,20 @@ private:
 
 // TokenStream Functions
 
-void TokenStream::ignore(vector<char> endChars){
+void TokenStream::clean(){
+	// Cleans stream until ending characters are found (inclusive)
+	vector<char> endCh = {print, '\n'};
 
 	// Deal with characters in TokenStream
 	if (full){          
 		full = false;          // Refresh Token stream
-		for (char c : endChars) if (tokenAvailable.kind==c) return;	
+		for (char c : endCh) if (tokenAvailable.kind==c) return;	
 	}
 	
-	// Deal with characters in cin stream
+	// Deal with characters in input stream
 	char ch;
 	while (ist.get(ch)){     // Flush remaining chars of cin stream until end of statement
-		for (char c : endChars) if (ch == c) return;
+		for (char c : endCh) if (ch == c) return;
 	}
 }
 
@@ -83,6 +86,9 @@ Token TokenStream::get() {
 
 	char ch;
 	while ((ist.get(ch)) && (ch==' '));   // Skip all whitespace characters, '/n' included
+	if (ist.eof()) return Token {eof};
+
+	// Reading of character was effective, read into Token
 	switch (ch) {
 	
 	case print:
@@ -132,6 +138,6 @@ Token TokenStream::get() {
 			return Token{var, name};
 		}
 		error("Token not recognized:", ch);
-		return Token{var, "error"};    // Return some Token for completeness of function
+		return Token{err};    // Return some Token for completeness of function
 	}
 }
