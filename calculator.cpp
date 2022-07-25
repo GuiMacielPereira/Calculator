@@ -68,6 +68,7 @@ Variables are handled through the AvailableVariables vt.
 // Passing TokenStram and Available variables by reference allows to modify them at each step
 void calculate (TokenStream&, AvailableVariables&);
 void inputFile (TokenStream&, AvailableVariables&);
+void outputFile (TokenStream&, AvailableVariables&);
 double definition (TokenStream&, AvailableVariables&);
 double expression (TokenStream&, AvailableVariables&);     
 double term (TokenStream&, AvailableVariables&);
@@ -113,17 +114,19 @@ void calculate(TokenStream& ts, AvailableVariables& vt){   // Passed by referenc
 
 	while (ts.ist) 
 	try {
-		cout << prompt;
+		ts.ost << prompt;
 		Token t = ts.get();
 
 		// Eats up the ; character, so the next input read by cin starts anew
 		while (t.kind==print) t = ts.get();    
 		if (t.kind==quit || t.kind==eof) return;    // Take into acount end of input stream to quit as well       
 		if (t.kind==help) {printHelp(); cout<<'\n'; continue;} // Use error to clean stream and skip to next iteration
+		// Currently this output stream stays open indefinitelyy, need to think of a way to close it
+		if (t.kind==to) {outputFile(ts, vt); cout<<'\n'; continue;}
 		if (t.kind==from) {inputFile(ts, vt); cout<<'\n'; continue;}  // Creates inner loop to calculate from file
 
 		ts.putBack(t);
-		cout << result << expression(ts, vt) << "\n";   
+		ts.ost << result << expression(ts, vt) << "\n";   
 	}
 	catch (exception& e){
 		cerr << e.what() << '\n';
@@ -338,12 +341,28 @@ void inputFile (TokenStream& ts, AvailableVariables& vt)
 	if (!ifile) error ("Error ocurred for opening of file.");
 
 	// Change private input stream to file by initializing token stream 
-	TokenStream tsf (ifile);
+	TokenStream tsf (ifile, ts.ost);
 	calculate (tsf, vt);    // Start reading from file
 	return;
 }
 
 
+void outputFile (TokenStream& ts, AvailableVariables& vt)
+{
+	// Token to was already read
+
+	Token t = ts.get();
+
+	if (t.kind != path) error ("Unable to find path specified, make sure to include '.' and '/' in path name");
+	ofstream ofile {t.name};
+	if (!ofile) error ("Error ocurred for opening of file.");
+
+	// Initialize a new calculate loop with the new output stream
+	TokenStream tsf (ts.ist, ofile);
+	calculate (tsf, vt);
+	return;
+
+}
 // Printing functions
 
 void printWelcome(){

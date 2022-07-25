@@ -16,6 +16,8 @@ const char pwr = 'p';
 const string powString = "pow";
 const char from = 'f';
 const string fromString = "from";
+const char to = 't';
+const string toString = "to";
 const char path = '/';
 const char err = 'e';
 const char eof = '.';
@@ -38,11 +40,12 @@ public:
 	Token get();
 	void clean();
     istream& ist;    
+	ostream& ost;
 
 	// Define input stream for Tokens
-    TokenStream (istream& is): ist {is} {};   
-	TokenStream (): ist {cin} {};
-	TokenStream (Token t, istream& is): full {true}, tokenAvailable {t}, ist {is} {};
+    TokenStream (istream& is, ostream& os): ist {is}, ost {os} {};   
+	TokenStream (): ist {cin}, ost {cout} {};
+	TokenStream (Token t, istream& is, ostream& os): full {true}, tokenAvailable {t}, ist {is}, ost {os} {};
 private:
 	bool full{ false };
 	Token tokenAvailable {var, "None"} ;    // Need to initialize Token using one of the geenrator definitions
@@ -134,6 +137,7 @@ Token TokenStream::get() {
 			if (name==sqrtString) return Token{sq};
 			if (name==powString) return Token{pwr};
 			if (name==fromString) return Token{from};
+			if (name==toString) return Token{to};
 			if (isPath) return Token{path, name};
 			return Token{var, name};
 		}
