@@ -37,7 +37,7 @@ public:
 	void putBack(Token t);
 	Token get();
 	void clean();
-    istream& ist;    // Have not tried this yet
+    istream& ist;    
 
 	// Define input stream for Tokens
     TokenStream (istream& is): ist {is} {};   

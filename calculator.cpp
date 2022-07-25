@@ -120,7 +120,7 @@ void calculate(TokenStream& ts, AvailableVariables& vt){   // Passed by referenc
 		while (t.kind==print) t = ts.get();    
 		if (t.kind==quit || t.kind==eof) return;    // Take into acount end of input stream to quit as well       
 		if (t.kind==help) {printHelp(); cout<<'\n'; continue;} // Use error to clean stream and skip to next iteration
-		if (t.kind==from) {inputFile(ts, vt); cout<<'\n'; continue;}
+		if (t.kind==from) {inputFile(ts, vt); cout<<'\n'; continue;}  // Creates inner loop to calculate from file
 
 		ts.putBack(t);
 		cout << result << expression(ts, vt) << "\n";   
